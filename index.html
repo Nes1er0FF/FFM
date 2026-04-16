@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <title>FFM — музыкальный архив</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: #0a0a0a;
+            color: #e0e0e0;
+            font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+            padding: 2rem 1rem;
+            line-height: 1.5;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        h1 {
+            font-size: 2rem;
+            margin-bottom: 0.5rem;
+            letter-spacing: -0.02em;
+        }
+
+        .sub {
+            color: #888;
+            margin-bottom: 2rem;
+            border-left: 3px solid #2a6f3f;
+            padding-left: 1rem;
+        }
+
+        .track-list {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+
+        .track {
+            background: #111;
+            border-radius: 12px;
+            padding: 1rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 0.75rem;
+            border: 1px solid #222;
+        }
+
+        .track-info {
+            flex: 2;
+            min-width: 150px;
+        }
+
+        .track-title {
+            font-weight: 600;
+            margin-bottom: 0.25rem;
+        }
+
+        .track-artist {
+            font-size: 0.85rem;
+            color: #aaa;
+        }
+
+        audio {
+            max-width: 240px;
+            width: 100%;
+            height: 40px;
+        }
+
+        .download-btn {
+            background: #1e2a1f;
+            color: #8bc34a;
+            border: none;
+            padding: 0.4rem 1rem;
+            border-radius: 20px;
+            cursor: pointer;
+            font-size: 0.85rem;
+            transition: 0.2s;
+            text-decoration: none;
+            display: inline-block;
+        }
+
+        .download-btn:hover {
+            background: #2a3a2a;
+            color: #b9f06e;
+        }
+
+        footer {
+            text-align: center;
+            color: #444;
+            font-size: 0.8rem;
+            margin-top: 2rem;
+            border-top: 1px solid #1a1a1a;
+            padding-top: 1.5rem;
+        }
+
+        @media (max-width: 600px) {
+            .track {
+                flex-direction: column;
+                align-items: stretch;
+            }
+            audio {
+                max-width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <h1>FFM</h1>
+    <div class="sub">архив того, что не должны отнять</div>
+
+    <div class="track-list" id="trackList">
+        <!-- сюда будут подгружаться треки -->
+        <div style="color:#555; text-align:center; padding:2rem;">загрузка треков...</div>
+    </div>
+
+    <footer>
+        FFM — локальный архив. Никто не удалит то, что у тебя на диске.
+    </footer>
+</div>
+
+<script>
+    // ПЛЕЙЛИСТ — ДОБАВЛЯЙ СВОИ ТРЕКИ СЮДА
+    const tracks = [
+        {
+            title: "Название трека",
+            artist: "Исполнитель",
+            file: "music/track1.mp3"
+        },
+        {
+            title: "Ещё один трек",
+            artist: "Другой исполнитель",
+            file: "music/track2.mp3"
+        }
+    ];
+
+    function buildTrackList() {
+        const container = document.getElementById('trackList');
+        if (!container) return;
+
+        if (!tracks.length) {
+            container.innerHTML = '<div style="color:#555; text-align:center; padding:2rem;">треков пока нет. добавь в папку music/ и укажи в массиве tracks</div>';
+            return;
+        }
+
+        container.innerHTML = tracks.map(track => `
+            <div class="track">
+                <div class="track-info">
+                    <div class="track-title">${escapeHtml(track.title)}</div>
+                    <div class="track-artist">${escapeHtml(track.artist)}</div>
+                </div>
+                <audio controls preload="metadata">
+                    <source src="${track.file}" type="audio/mpeg">
+                    твой браузер не поддерживает аудио
+                </audio>
+                <a href="${track.file}" download class="download-btn">↓ скачать</a>
+            </div>
+        `).join('');
+    }
+
+    function escapeHtml(str) {
+        if (!str) return '';
+        return str.replace(/[&<>]/g, function(m) {
+            if (m === '&') return '&amp;';
+            if (m === '<') return '&lt;';
+            if (m === '>') return '&gt;';
+            return m;
+        });
+    }
+
+    buildTrackList();
+</script>
+</body>
+</html>
