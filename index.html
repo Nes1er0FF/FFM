@@ -2,7 +2,7 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>FFM — музыкальный архив без РКН</title>
     <style>
         * {
@@ -37,47 +37,54 @@
             padding-left: 1rem;
         }
 
-        .track-list {
+        /* список исполнителей */
+        .artist-list {
             display: flex;
             flex-direction: column;
-            gap: 1rem;
-            margin-bottom: 2rem;
+            gap: 0.75rem;
         }
 
-        .track {
+        .artist-card {
             background: #111;
             border-radius: 12px;
-            padding: 1rem;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            flex-wrap: wrap;
-            gap: 0.75rem;
+            padding: 1rem 1.2rem;
+            cursor: pointer;
+            transition: 0.2s;
             border: 1px solid #222;
+            display: flex;
+            align-items: center;
+            gap: 1rem;
         }
 
-        .track-info {
-            flex: 2;
-            min-width: 150px;
+        .artist-card:hover {
+            background: #1a1a1a;
+            border-color: #2a6f3f;
         }
 
-        .track-title {
+        .artist-name {
+            font-size: 1.2rem;
             font-weight: 600;
-            margin-bottom: 0.25rem;
         }
 
-        .track-artist {
+        .artist-years {
             font-size: 0.85rem;
-            color: #aaa;
+            color: #666;
         }
 
-        audio {
-            max-width: 240px;
-            width: 100%;
-            height: 40px;
+        /* карточка исполнителя (изначально скрыта) */
+        .artist-detail {
+            display: none;
         }
 
-        .download-btn {
+        .detail-header {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+            flex-wrap: wrap;
+        }
+
+        .back-btn {
             background: #1e2a1f;
             color: #8bc34a;
             border: none;
@@ -85,14 +92,79 @@
             border-radius: 20px;
             cursor: pointer;
             font-size: 0.85rem;
-            transition: 0.2s;
-            text-decoration: none;
-            display: inline-block;
         }
 
-        .download-btn:hover {
+        .back-btn:hover {
             background: #2a3a2a;
-            color: #b9f06e;
+        }
+
+        .artist-title {
+            font-size: 1.8rem;
+            font-weight: 600;
+        }
+
+        .artist-bio {
+            color: #aaa;
+            margin-bottom: 1.5rem;
+            padding: 0.8rem;
+            background: #0e0e0e;
+            border-radius: 12px;
+        }
+
+        .album {
+            background: #0e0e0e;
+            border-radius: 12px;
+            padding: 1rem;
+            margin-bottom: 1rem;
+            border-left: 3px solid #2a6f3f;
+        }
+
+        .album-title {
+            font-weight: 700;
+            font-size: 1.2rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .album-year {
+            font-size: 0.8rem;
+            color: #666;
+            margin-bottom: 0.5rem;
+        }
+
+        .track-list {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+            margin-top: 0.5rem;
+        }
+
+        .track {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: #0a0a0a;
+            padding: 0.5rem 0.8rem;
+            border-radius: 8px;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+        }
+
+        .track-name {
+            font-size: 0.95rem;
+        }
+
+        audio {
+            height: 32px;
+            max-width: 200px;
+        }
+
+        .download-link {
+            background: #1e2a1f;
+            color: #8bc34a;
+            padding: 0.2rem 0.6rem;
+            border-radius: 20px;
+            text-decoration: none;
+            font-size: 0.75rem;
         }
 
         footer {
@@ -100,73 +172,133 @@
             color: #444;
             font-size: 0.8rem;
             margin-top: 2rem;
-            border-top: 1px solid #1a1a1a;
             padding-top: 1.5rem;
-        }
-
-        @media (max-width: 600px) {
-            .track {
-                flex-direction: column;
-                align-items: stretch;
-            }
-            audio {
-                max-width: 100%;
-            }
+            border-top: 1px solid #1a1a1a;
         }
     </style>
 </head>
 <body>
-<div class="container">
+<div class="container" id="app">
     <h1>FFM</h1>
-    <div class="sub">FFM</div>
+    <div class="sub">мне надоел РКН и я решил создать себе сайт с музяшкой</div>
 
-    <div class="track-list" id="trackList">
-        <!-- сюда будут подгружаться треки -->
-        <div style="color:#555; text-align:center; padding:2rem;">загрузка треков...</div>
+    <!-- список исполнителей -->
+    <div id="artistListView">
+        <div class="artist-list" id="artistList"></div>
     </div>
 
+    <!-- карточка исполнителя (будет заполняться js) -->
+    <div id="artistDetailView" class="artist-detail"></div>
+
     <footer>
-        мне надоел РКН и я решил создать себе сайт с музяшкой
+        FFM — локальный архив. Слушай. Скачивай. Помни.
     </footer>
 </div>
 
 <script>
-    // ПЛЕЙЛИСТ — ДОБАВЛЯЙ СВОИ ТРЕКИ СЮДА
-    const tracks = [
+    // ========== ДАННЫЕ ==========
+    const artists = [
         {
-            title: "Butterfly Effect",
-            artist: "KILAKILL",
-            file: "https://mega.nz/file/P3B3jCKD#RWTaTX7yfJikZbBt1Zlyzs4xRGciyDgfHQF2xr6uhF4"
+            id: "unnv",
+            name: "УННВ",
+            years: "2010–н.в.",
+            bio: "Андеграунд-рэп из Минска. Гении рифмы и метафор.",
+            albums: [
+                {
+                    title: "Чёрная кассета",
+                    year: 2013,
+                    tracks: [
+                        { name: "Первый трек", file: "music/unnv/1.mp3" },
+                        { name: "Второй трек", file: "music/unnv/2.mp3" }
+                    ]
+                },
+                {
+                    title: "Чёрная кассета 2",
+                    year: 2015,
+                    tracks: [
+                        { name: "Трек с альбома", file: "music/unnv/album2/1.mp3" }
+                    ]
+                }
+            ]
         },
         {
-            title: "Ещё один трек",
-            artist: "Другой исполнитель",
-            file: "music/track2.mp3"
+            id: "letov",
+            name: "Егор Летов",
+            years: "1964–2019",
+            bio: "Лидер групп «Гражданская Оборона», «Егор и Опизденевшие». Голос поколения.",
+            albums: [
+                {
+                    title: "Русское поле экспериментов",
+                    year: 1989,
+                    tracks: [
+                        { name: "Всё идёт по плану", file: "music/letov/vsyo_idet_po_planu.mp3" }
+                    ]
+                }
+            ]
         }
     ];
 
-    function buildTrackList() {
-        const container = document.getElementById('trackList');
+    // ========== ОТРИСОВКА ==========
+    function renderArtistList() {
+        const container = document.getElementById('artistList');
         if (!container) return;
-
-        if (!tracks.length) {
-            container.innerHTML = '<div style="color:#555; text-align:center; padding:2rem;">треков пока нет. добавь в папку music/ и укажи в массиве tracks</div>';
-            return;
-        }
-
-        container.innerHTML = tracks.map(track => `
-            <div class="track">
-                <div class="track-info">
-                    <div class="track-title">${escapeHtml(track.title)}</div>
-                    <div class="track-artist">${escapeHtml(track.artist)}</div>
+        container.innerHTML = artists.map(artist => `
+            <div class="artist-card" data-id="${artist.id}">
+                <div>
+                    <div class="artist-name">${escapeHtml(artist.name)}</div>
+                    <div class="artist-years">${escapeHtml(artist.years)}</div>
                 </div>
-                <audio controls preload="metadata">
-                    <source src="${track.file}" type="audio/mpeg">
-                    твой браузер не поддерживает аудио
-                </audio>
-                <a href="${track.file}" download class="download-btn">↓ скачать</a>
             </div>
         `).join('');
+
+        document.querySelectorAll('.artist-card').forEach(card => {
+            card.addEventListener('click', () => showArtistDetail(card.dataset.id));
+        });
+    }
+
+    function showArtistDetail(artistId) {
+        const artist = artists.find(a => a.id === artistId);
+        if (!artist) return;
+
+        const listView = document.getElementById('artistListView');
+        const detailView = document.getElementById('artistDetailView');
+        if (!listView || !detailView) return;
+
+        // альбомы
+        const albumsHtml = artist.albums.map(album => `
+            <div class="album">
+                <div class="album-title">${escapeHtml(album.title)}</div>
+                <div class="album-year">${album.year}</div>
+                <div class="track-list">
+                    ${album.tracks.map(track => `
+                        <div class="track">
+                            <span class="track-name">${escapeHtml(track.name)}</span>
+                            <audio controls preload="metadata">
+                                <source src="${track.file}" type="audio/mpeg">
+                            </audio>
+                            <a href="${track.file}" download class="download-link">↓ скачать</a>
+                        </div>
+                    `).join('')}
+                </div>
+            </div>
+        `).join('');
+
+        detailView.innerHTML = `
+            <div class="detail-header">
+                <button class="back-btn" id="backToListBtn">← назад</button>
+                <span class="artist-title">${escapeHtml(artist.name)}</span>
+            </div>
+            <div class="artist-bio">${escapeHtml(artist.bio)}</div>
+            ${albumsHtml}
+        `;
+
+        listView.style.display = 'none';
+        detailView.style.display = 'block';
+
+        document.getElementById('backToListBtn')?.addEventListener('click', () => {
+            listView.style.display = 'block';
+            detailView.style.display = 'none';
+        });
     }
 
     function escapeHtml(str) {
@@ -179,7 +311,7 @@
         });
     }
 
-    buildTrackList();
+    renderArtistList();
 </script>
 </body>
 </html>
