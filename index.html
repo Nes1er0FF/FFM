@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>FFM — музыкальный архив без РКН</title>
+    <title>FFM — музыкальный архив с поиском</title>
     <style>
         * {
             margin: 0;
@@ -20,7 +20,7 @@
         }
 
         .container {
-            max-width: 800px;
+            max-width: 900px;
             margin: 0 auto;
         }
 
@@ -35,6 +35,72 @@
             margin-bottom: 2rem;
             border-left: 3px solid #2a6f3f;
             padding-left: 1rem;
+        }
+
+        /* поиск */
+        .search-box {
+            margin-bottom: 2rem;
+        }
+
+        .search-input {
+            width: 100%;
+            background: #111;
+            border: 1px solid #222;
+            padding: 0.8rem 1rem;
+            border-radius: 40px;
+            color: #e0e0e0;
+            font-size: 1rem;
+            outline: none;
+        }
+
+        .search-input:focus {
+            border-color: #2a6f3f;
+        }
+
+        /* результаты поиска */
+        .search-results {
+            margin-bottom: 2rem;
+            background: #0e0e0e;
+            border-radius: 16px;
+            padding: 1rem;
+            display: none;
+        }
+
+        .search-results h3 {
+            margin-bottom: 0.8rem;
+            font-size: 1.1rem;
+            color: #8bc34a;
+        }
+
+        .search-result-item {
+            background: #111;
+            padding: 0.7rem 1rem;
+            margin-bottom: 0.5rem;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: 0.2s;
+            border: 1px solid #222;
+        }
+
+        .search-result-item:hover {
+            background: #1a1a1a;
+            border-color: #2a6f3f;
+        }
+
+        .result-type {
+            font-size: 0.7rem;
+            color: #8bc34a;
+            text-transform: uppercase;
+            margin-bottom: 0.2rem;
+        }
+
+        .result-title {
+            font-weight: 600;
+        }
+
+        .result-sub {
+            font-size: 0.8rem;
+            color: #888;
         }
 
         /* список исполнителей */
@@ -71,7 +137,7 @@
             color: #666;
         }
 
-        /* карточка исполнителя (изначально скрыта) */
+        /* карточка исполнителя */
         .artist-detail {
             display: none;
         }
@@ -180,14 +246,21 @@
 <body>
 <div class="container" id="app">
     <h1>FFM</h1>
-    <div class="sub">мне надоел РКН и я решил создать себе сайт с музяшкой</div>
+    <div class="sub">архив музыки, который никто не отнимет</div>
+
+    <!-- ПОИСК -->
+    <div class="search-box">
+        <input type="text" class="search-input" id="searchInput" placeholder="🔍 Искать исполнителей, альбомы, треки...">
+    </div>
+
+    <div id="searchResults" class="search-results"></div>
 
     <!-- список исполнителей -->
     <div id="artistListView">
         <div class="artist-list" id="artistList"></div>
     </div>
 
-    <!-- карточка исполнителя (будет заполняться js) -->
+    <!-- карточка исполнителя -->
     <div id="artistDetailView" class="artist-detail"></div>
 
     <footer>
@@ -211,13 +284,6 @@
                         { name: "Первый трек", file: "music/unnv/1.mp3" },
                         { name: "Второй трек", file: "music/unnv/2.mp3" }
                     ]
-                },
-                {
-                    title: "Чёрная кассета 2",
-                    year: 2015,
-                    tracks: [
-                        { name: "Трек с альбома", file: "music/unnv/album2/1.mp3" }
-                    ]
                 }
             ]
         },
@@ -237,6 +303,99 @@
             ]
         }
     ];
+
+    // ========== ПОИСК ==========
+    function search(query) {
+        const q = query.toLowerCase().trim();
+        if (!q) return [];
+
+        const results = [];
+
+        for (const artist of artists) {
+            // поиск по исполнителю
+            if (artist.name.toLowerCase().includes(q)) {
+                results.push({
+                    type: "artist",
+                    artistId: artist.id,
+                    title: artist.name,
+                    subtitle: artist.years,
+                    artistName: artist.name
+                });
+            }
+
+            // поиск по альбомам и трекам
+            for (const album of artist.albums) {
+                if (album.title.toLowerCase().includes(q)) {
+                    results.push({
+                        type: "album",
+                        artistId: artist.id,
+                        albumTitle: album.title,
+                        title: `Альбом: ${album.title}`,
+                        subtitle: `${artist.name} (${album.year})`,
+                        artistName: artist.name
+                    });
+                }
+
+                for (const track of album.tracks) {
+                    if (track.name.toLowerCase().includes(q)) {
+                        results.push({
+                            type: "track",
+                            artistId: artist.id,
+                            trackName: track.name,
+                            trackFile: track.file,
+                            albumTitle: album.title,
+                            title: `🎵 ${track.name}`,
+                            subtitle: `${artist.name} — ${album.title}`,
+                            artistName: artist.name
+                        });
+                    }
+                }
+            }
+        }
+
+        return results;
+    }
+
+    function renderSearchResults(results) {
+        const container = document.getElementById('searchResults');
+        if (!container) return;
+
+        if (!results.length) {
+            container.style.display = 'none';
+            return;
+        }
+
+        container.style.display = 'block';
+        container.innerHTML = `<h3>🔎 Результаты поиска (${results.length})</h3>` + results.map(res => {
+            let onclick = '';
+            if (res.type === 'artist') {
+                onclick = `showArtistDetail('${res.artistId}')`;
+            } else if (res.type === 'album') {
+                onclick = `showArtistDetail('${res.artistId}')`;
+            } else if (res.type === 'track') {
+                // для трека — открываем исполнителя + скролл до трека (упрощённо)
+                onclick = `showArtistDetailAndScrollToTrack('${res.artistId}', '${escapeHtml(res.trackName)}')`;
+            }
+            return `<div class="search-result-item" onclick="${onclick}">
+                        <div class="result-type">${res.type === 'artist' ? 'Исполнитель' : (res.type === 'album' ? 'Альбом' : 'Трек')}</div>
+                        <div class="result-title">${escapeHtml(res.title)}</div>
+                        <div class="result-sub">${escapeHtml(res.subtitle)}</div>
+                    </div>`;
+        }).join('');
+    }
+
+    function showArtistDetailAndScrollToTrack(artistId, trackName) {
+        showArtistDetail(artistId);
+        setTimeout(() => {
+            const elements = document.querySelectorAll('.track-name');
+            for (let el of elements) {
+                if (el.innerText.includes(trackName)) {
+                    el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    break;
+                }
+            }
+        }, 100);
+    }
 
     // ========== ОТРИСОВКА ==========
     function renderArtistList() {
@@ -264,7 +423,6 @@
         const detailView = document.getElementById('artistDetailView');
         if (!listView || !detailView) return;
 
-        // альбомы
         const albumsHtml = artist.albums.map(album => `
             <div class="album">
                 <div class="album-title">${escapeHtml(album.title)}</div>
@@ -298,6 +456,8 @@
         document.getElementById('backToListBtn')?.addEventListener('click', () => {
             listView.style.display = 'block';
             detailView.style.display = 'none';
+            document.getElementById('searchResults').style.display = 'none';
+            document.getElementById('searchInput').value = '';
         });
     }
 
@@ -310,6 +470,16 @@
             return m;
         });
     }
+
+    // поиск при вводе
+    document.getElementById('searchInput').addEventListener('input', (e) => {
+        const results = search(e.target.value);
+        renderSearchResults(results);
+        if (results.length) {
+            document.getElementById('artistListView').style.display = 'block';
+            document.getElementById('artistDetailView').style.display = 'none';
+        }
+    });
 
     renderArtistList();
 </script>
